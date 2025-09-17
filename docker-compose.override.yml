@@ -1,0 +1,4 @@
+# Docker Compose override for CPU-only usage
+# This file removes GPU requirements for systems without NVIDIA GPUs
+
+# No overrides needed since Ollama is running externally
