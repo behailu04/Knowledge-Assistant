@@ -10,14 +10,17 @@ RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Install uv
+RUN pip install uv
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy pyproject.toml and uv.lock
+COPY pyproject.toml uv.lock ./
+
+# Install Python dependencies using uv
+RUN uv pip install --system --no-cache .
 
 # Copy application code
-COPY . .
+COPY backend/ .
 
 # Create data directory
 RUN mkdir -p /app/data
