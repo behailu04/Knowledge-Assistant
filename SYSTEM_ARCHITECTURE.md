@@ -70,112 +70,125 @@ The Knowledge Assistant is an AI-powered system that provides intelligent docume
 - Dependency status monitoring
 - Performance metrics collection
 
-### 4. Core Services Layer
+### 4. Core Services Layer (LangChain Implementation)
 
-#### 4.1 Document Ingestion Pipeline (`services/ingestion.py`)
+#### 4.1 LangChain RAG Service (`services/langchain_rag_service.py`)
 
-**Processing Flow**:
-```
-Document Upload → Text Extraction → Chunking → Embedding Generation → Vector Storage
-```
+**Main Orchestrator**: Central service coordinating all LangChain components
 
 **Key Features**:
-- Multi-format document support (PDF, DOC, DOCX, TXT, MD)
-- Intelligent text extraction with error handling
-- Configurable chunking strategies
-- Parallel processing for large documents
-- Tenant-based document isolation
-
-#### 4.2 Chunking Service (`services/chunking.py`)
-- Semantic-aware text segmentation
-- Metadata preservation (headings, entities)
-- Configurable chunk sizes and overlap
-- Language-specific processing
-
-#### 4.3 Embedding Service (`services/embedding.py`)
-- Sentence transformer models (all-MiniLM-L6-v2)
-- Batch processing for efficiency
-- Embedding caching and reuse
-- Model versioning support
-
-#### 4.4 Vector Store Service (`services/vector_store.py`)
-
-**Technology**: FAISS (Facebook AI Similarity Search)
-
-**Features**:
-- HNSW (Hierarchical Navigable Small World) indexing
-- Tenant-isolated vector spaces
-- Persistent storage with metadata
-- Similarity search with configurable thresholds
-- Index optimization and maintenance
-
-**Data Structure**:
-```python
-{
-    "chunk_id": "uuid",
-    "doc_id": "uuid", 
-    "tenant_id": "string",
-    "text": "chunk content",
-    "embedding": [float_array],
-    "metadata": {
-        "start_pos": int,
-        "end_pos": int,
-        "heading": string,
-        "entities": [string],
-        "language": string
-    }
-}
-```
-
-#### 4.5 Retrieval Service (`services/retrieval.py`)
-
-**Two-Stage Retrieval Process**:
-1. **Vector Search**: FAISS similarity search (Top-K candidates)
-2. **Reranking**: Cross-encoder model for relevance scoring (Top-N results)
-
-**Advanced Features**:
-- Multi-hop retrieval with context enhancement
-- Query expansion and reformulation
-- Snippet generation with highlighting
-- Similar chunk discovery
-
-#### 4.6 Reranker Service (`services/reranker.py`)
-- Cross-encoder models for relevance scoring
-- Configurable ranking algorithms
-- Performance optimization for large candidate sets
-
-#### 4.7 LLM Orchestrator (`services/llm_orchestrator.py`)
-
-**Core Responsibilities**:
-- Multi-hop query planning and execution
-- Self-consistency with multiple reasoning traces
-- Chain-of-thought reasoning implementation
-- Answer generation and verification
+- Advanced query processing with intelligent strategy selection
+- Multi-hop reasoning and self-consistency
+- Performance monitoring and validation
+- Tenant-aware processing
+- Comprehensive error handling
 
 **Processing Flow**:
 ```
-Query → Complexity Analysis → Query Planning → Multi-hop Execution → Self-Consistency → Verification → Response
+Query → Validation → Query Planning → Strategy Selection → Processing → Response Formatting
 ```
 
-#### 4.8 Query Planner (`services/query_planner.py`)
+#### 4.2 Document Processing (`langchain_services/document_processing/`)
 
-**Query Decomposition Strategies**:
-- Pattern-based query analysis
-- Dependency tracking between hops
-- Context-aware subquery generation
-- Execution plan optimization
+**Multi-Format Document Loader** (`loaders.py`):
+- Support for PDF, DOCX, DOC, TXT, MD formats
+- Intelligent file type detection
+- Error handling and validation
+- Metadata preservation
 
-**Hop Types**:
-- **Direct**: Simple retrieval queries
-- **Filter**: Conditional filtering operations
-- **Retrieve**: Information gathering
-- **Extract**: Specific data extraction
-- **Compare**: Comparative analysis
+**Hybrid Text Splitter** (`splitters.py`):
+- Recursive character splitting
+- Token-based splitting
+- NLTK sentence-aware splitting
+- Semantic-aware chunking
+- Configurable chunk sizes and overlap
 
-#### 4.9 Verification Service (`services/verification.py`)
-- Claim verification against source documents
-- Confidence scoring and uncertainty quantification
-- Evidence-based answer validation
+**Embedding Manager** (`embeddings.py`):
+- Multi-provider support (OpenAI, HuggingFace)
+- Local embedding models
+- Batch processing optimization
+- Caching and reuse strategies
+
+#### 4.3 Vector Stores (`langchain_services/vector_stores/`)
+
+**Tenant-Aware FAISS Store** (`faiss_store.py`):
+- Complete tenant isolation
+- Persistent storage with metadata
+- HNSW indexing for fast search
+- Automatic store creation and management
+- Health monitoring and statistics
+
+**Features**:
+- Tenant-specific vector spaces
+- Similarity search with scoring
+- Document addition and retrieval
+- Metadata preservation
+- Performance optimization
+
+#### 4.4 Advanced Reasoning Agents (`langchain_services/agents/`)
+
+**Multi-Hop Reasoning Agent** (`multi_hop_agent.py`):
+- Complex query decomposition
+- Sequential reasoning execution
+- Context building across hops
+- Tool-based information gathering
+- Confidence scoring
+
+**Self-Consistency Agent** (`self_consistency_agent.py`):
+- Multiple reasoning trace generation
+- Consensus finding algorithms
+- Agreement scoring
+- Uncertainty quantification
+- Parallel trace execution
+
+**Query Planner Agent** (`query_planner_agent.py`):
+- Query complexity analysis
+- Execution strategy selection
+- Sub-query generation
+- Dependency tracking
+- Performance optimization
+
+#### 4.5 RAG Chains (`langchain_services/chains/`)
+
+**Advanced RAG Chain** (`rag_chain.py`):
+- Conversational and QA modes
+- Custom prompt templates
+- Memory management
+- Source document handling
+- Confidence calculation
+
+**Features**:
+- Chain-of-thought reasoning
+- Context-aware responses
+- Source citation
+- Error handling
+- Performance monitoring
+
+#### 4.6 Utility Services (`langchain_services/utils/`)
+
+**Prompt Templates** (`prompt_templates.py`):
+- Pre-built templates for different use cases
+- Custom template creation
+- Context-aware formatting
+- Multi-language support
+
+**Response Formatters** (`response_formatters.py`):
+- Consistent response formatting
+- Error response handling
+- Metadata enrichment
+- Validation and sanitization
+
+**Performance Monitor** (`performance_monitor.py`):
+- Real-time performance tracking
+- Resource usage monitoring
+- Latency and throughput metrics
+- Comprehensive reporting
+
+**Validation Utils** (`validation.py`):
+- Input validation
+- Configuration validation
+- Response validation
+- Security checks
 
 ### 5. LLM Provider Layer
 
@@ -296,53 +309,89 @@ Document Upload
 └─────────────────┘
 ```
 
-### Query Processing Architecture
+### Query Processing Architecture (LangChain)
 
 ```
 User Query
     │
     ▼
 ┌─────────────────┐
-│  Query Analysis │
+│ Input Validation│
 └─────────────────┘
     │
     ▼
 ┌─────────────────┐
-│ Complexity Check│
+│ Query Planning  │
+│ (Complexity     │
+│  Analysis)      │
 └─────────────────┘
     │
-    ├── Simple ──► Single-hop Processing
+    ├── Simple ──► Basic RAG Chain
+    │              │
+    │              ▼
+    │       ┌─────────────────┐
+    │       │ Vector Search   │
+    │       └─────────────────┘
+    │              │
+    │              ▼
+    │       ┌─────────────────┐
+    │       │ LLM Generation  │
+    │       └─────────────────┘
     │
-    └── Complex ──► Multi-hop Planning
+    ├── Medium ──► Self-Consistency
+    │              │
+    │              ▼
+    │       ┌─────────────────┐
+    │       │ Multiple Traces │
+    │       └─────────────────┘
+    │              │
+    │              ▼
+    │       ┌─────────────────┐
+    │       │ Consensus       │
+    │       │ Finding         │
+    │       └─────────────────┘
+    │
+    └── Complex ──► Multi-Hop Reasoning
                     │
                     ▼
             ┌─────────────────┐
-            │ Hop Execution   │
+            │ Query           │
+            │ Decomposition   │
             └─────────────────┘
                     │
                     ▼
             ┌─────────────────┐
-            │ Context Building│
+            │ Sequential Hop  │
+            │ Execution       │
             └─────────────────┘
                     │
                     ▼
             ┌─────────────────┐
-            │Self-Consistency │
+            │ Context         │
+            │ Synthesis       │
             └─────────────────┘
                     │
                     ▼
             ┌─────────────────┐
-            │Answer Generation│
+            │ Final Answer    │
+            │ Generation      │
             └─────────────────┘
                     │
                     ▼
             ┌─────────────────┐
-            │  Verification   │
+            │ Response        │
+            │ Formatting      │
             └─────────────────┘
                     │
                     ▼
             ┌─────────────────┐
-            │   Response      │
+            │ Performance     │
+            │ Monitoring      │
+            └─────────────────┘
+                    │
+                    ▼
+            ┌─────────────────┐
+            │ Final Response  │
             └─────────────────┘
 ```
 
@@ -526,6 +575,13 @@ Complex Query
 DATABASE_URL=postgresql://user:pass@host:5432/db
 REDIS_URL=redis://host:6379
 
+# LangChain Configuration
+USE_LANGCHAIN=true
+LANGCHAIN_LLM_PROVIDER=ollama
+LANGCHAIN_EMBEDDING_PROVIDER=huggingface
+LANGCHAIN_LLM_MODEL=llama2
+LANGCHAIN_EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+
 # LLM Configuration
 LLM_PROVIDER=ollama|openai
 OLLAMA_BASE_URL=http://localhost:11434
@@ -535,13 +591,26 @@ OPENAI_API_KEY=your_key
 # Vector Store Configuration
 VECTOR_STORE_TYPE=faiss
 EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+LANGCHAIN_VECTOR_STORE_PATH=./data/langchain_vector_stores
 
-# Performance Tuning
+# Document Processing
+LANGCHAIN_CHUNK_SIZE=1000
+LANGCHAIN_CHUNK_OVERLAP=200
+
+# Advanced Reasoning
 MAX_HOPS=3
 SELF_CONSISTENCY_SAMPLES=5
+TEMPERATURE=0.7
+
+# Performance Tuning
 TOP_K_RETRIEVAL=50
 TOP_N_RERANK=10
 SIMILARITY_THRESHOLD=0.7
+
+# LangSmith Tracing (Optional)
+LANGCHAIN_TRACING_V2=false
+LANGCHAIN_API_KEY=your_langsmith_key
+LANGCHAIN_PROJECT=knowledge_assistant
 ```
 
 ## Development and Testing
