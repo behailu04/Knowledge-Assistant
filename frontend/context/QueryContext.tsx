@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import axios from 'axios';
+import { apiService, QueryRequest, QueryResponse } from '@/lib/api';
 
 interface Message {
   id: number;
@@ -48,31 +48,35 @@ export const QueryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setMessages(prev => [...prev, userMessage]);
 
     try {
-      const response = await axios.post('/api/v1/query', {
+      const queryRequest: QueryRequest = {
         tenant_id: 'org_123',
         user_id: 'u_456',
         question: message.content,
-        max_hops: 3,
         options: {
+          use_multi_hop: true,
+          use_self_consistency: true,
           use_cot: true,
-          self_consistency_samples: 5
+          self_consistency_samples: 5,
+          max_hops: 3
         }
-      });
+      };
+
+      const response: QueryResponse = await apiService.processQuery(queryRequest);
 
       const assistantMessage: Message = {
         id: Date.now() + 1,
         type: 'assistant',
-        content: response.data.answer,
+        content: response.answer,
         timestamp: new Date(),
-        sources: response.data.sources,
-        confidence: response.data.confidence,
-        reasoning_traces: response.data.reasoning_traces,
-        hop_count: response.data.hop_count,
-        processing_time: response.data.processing_time,
+        sources: response.sources,
+        confidence: response.confidence,
+        reasoning_traces: response.reasoning_traces,
+        hop_count: response.hop_count,
+        processing_time: response.processing_time,
       };
 
       setMessages(prev => [...prev, assistantMessage]);
-      setCurrentQuery(response.data);
+      setCurrentQuery(response);
 
     } catch (error: any) {
       const errorMessage: Message = {
@@ -80,7 +84,7 @@ export const QueryProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         type: 'assistant',
         content: 'I apologize, but I encountered an error processing your query. Please try again.',
         timestamp: new Date(),
-        error: error.response?.data?.detail || error.message,
+        error: error.message || 'Unknown error occurred',
       };
 
       setMessages(prev => [...prev, errorMessage]);

@@ -1,22 +1,13 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback } from 'react';
-import axios from 'axios';
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { apiService, Document, DocumentUploadRequest } from '@/lib/api';
 
-interface Document {
-  doc_id: string;
-  tenant_id: string;
-  original_path: string;
-  doc_type: string;
-  language: string;
-  uploaded_at: string;
-  is_processed: boolean;
-  file_size: number;
-  metadata: Record<string, any>;
-}
+// Document interface is now imported from api.ts
 
 interface DocumentContextType {
   documents: Document[];
+  loading: boolean;
   uploadDocument: (file: File, metadata: any) => Promise<void>;
   deleteDocument: (docId: string) => Promise<void>;
   getDocumentStatus: (docId: string) => Promise<any>;
@@ -35,32 +26,38 @@ export const useDocument = () => {
 
 export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  // Load documents on mount
+  useEffect(() => {
+    refreshDocuments();
+  }, []);
 
   const uploadDocument = useCallback(async (file: File, metadata: any) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('tenant_id', metadata.tenant_id);
-    formData.append('doc_type', metadata.doc_type);
-    formData.append('language', metadata.language);
-
+    setLoading(true);
     try {
-      const response = await axios.post('/api/v1/documents/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const uploadRequest: DocumentUploadRequest = {
+        file,
+        tenant_id: metadata.tenant_id,
+        doc_type: metadata.doc_type,
+        language: metadata.language || 'en'
+      };
 
+      const response = await apiService.uploadDocument(uploadRequest);
+      
       // Add the new document to the list
-      setDocuments(prev => [response.data, ...prev]);
+      setDocuments(prev => [response, ...prev]);
     } catch (error) {
       console.error('Error uploading document:', error);
       throw error;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
   const deleteDocument = useCallback(async (docId: string) => {
     try {
-      await axios.delete(`/api/v1/documents/${docId}`);
+      await apiService.deleteDocument(docId);
       
       // Remove the document from the list
       setDocuments(prev => prev.filter(doc => doc.doc_id !== docId));
@@ -72,8 +69,7 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const getDocumentStatus = useCallback(async (docId: string) => {
     try {
-      const response = await axios.get(`/api/v1/documents/${docId}/status`);
-      return response.data;
+      return await apiService.getDocumentStatus(docId);
     } catch (error) {
       console.error('Error getting document status:', error);
       throw error;
@@ -81,24 +77,22 @@ export const DocumentProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const refreshDocuments = useCallback(async () => {
+    setLoading(true);
     try {
-      const response = await axios.get('/api/v1/documents', {
-        params: {
-          tenant_id: 'org_123',
-          limit: 100
-        }
-      });
-      
-      setDocuments(response.data);
+      const docs = await apiService.getDocuments('org_123', 100);
+      setDocuments(docs);
     } catch (error) {
       console.error('Error refreshing documents:', error);
       throw error;
+    } finally {
+      setLoading(false);
     }
   }, []);
 
   return (
     <DocumentContext.Provider value={{
       documents,
+      loading,
       uploadDocument,
       deleteDocument,
       getDocumentStatus,

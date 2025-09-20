@@ -24,6 +24,7 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({ onViewChange }) => {
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
   const { 
     documents, 
+    loading,
     uploadDocument, 
     deleteDocument, 
     getDocumentStatus,
@@ -61,15 +62,13 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({ onViewChange }) => {
   });
 
   const handleDelete = async (docId: string) => {
-    if (window.confirm('Are you sure you want to delete this document?')) {
-      try {
-        await deleteDocument(docId);
-        if (selectedDoc?.doc_id === docId) {
-          setSelectedDoc(null);
-        }
-      } catch (error) {
-        console.error('Error deleting document:', error);
+    try {
+      await deleteDocument(docId);
+      if (selectedDoc?.doc_id === docId) {
+        setSelectedDoc(null);
       }
+    } catch (error) {
+      console.error('Error deleting document:', error);
     }
   };
 
@@ -156,7 +155,12 @@ const DocumentManager: React.FC<DocumentManagerProps> = ({ onViewChange }) => {
 
         {/* Document List */}
         <div className="space-y-3 max-h-96 overflow-y-auto custom-scrollbar">
-          {documents.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-8 text-gray-500">
+              <RefreshCw className="w-12 h-12 mx-auto mb-3 text-gray-300 animate-spin" />
+              <p>Loading documents...</p>
+            </div>
+          ) : documents.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <FileText className="w-12 h-12 mx-auto mb-3 text-gray-300" />
               <p>No documents uploaded yet</p>
