@@ -1,7 +1,7 @@
 """
 Document management router
 """
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks, Form
 from sqlalchemy.orm import Session
 from typing import List
 import logging
@@ -16,7 +16,7 @@ from models.schemas import (
     IngestionStatusResponse,
     ErrorResponse
 )
-from services.ingestion import IngestionService
+from services.langchain_rag_service import LangChainRAGService
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -25,16 +25,16 @@ logger = logging.getLogger(__name__)
 async def upload_document(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    tenant_id: str = None,
-    doc_type: str = None,
-    language: str = "en",
+    tenant_id: str = Form(...),
+    doc_type: str = Form(...),
+    language: str = Form("en"),
     db: Session = Depends(get_db)
 ):
     """Upload a document for processing"""
     if not tenant_id:
         raise HTTPException(status_code=400, detail="tenant_id is required")
     if not doc_type:
-        raise HTTP_TaskException(status_code=400, detail="doc_type is required")
+        raise HTTPException(status_code=400, detail="doc_type is required")
     
     try:
         # Read file content
@@ -79,12 +79,12 @@ async def upload_document(
         db.refresh(doc)
         
         # Start background processing
-        ingestion_service = IngestionService()
         background_tasks.add_task(
             process_document_background,
             doc.doc_id,
             content,
-            tenant_id
+            tenant_id,
+            file.content_type or "application/octet-stream"
         )
         
         return DocumentResponse(
@@ -103,13 +103,71 @@ async def upload_document(
         logger.error(f"Error uploading document: {e}")
         raise HTTPException(status_code=500, detail=f"Error uploading document: {str(e)}")
 
-async def process_document_background(doc_id: str, content: bytes, tenant_id: str):
-    """Background task to process document"""
+async def process_document_background(doc_id: str, content: bytes, tenant_id: str, file_type: str):
+    """Background task to process document using LangChain"""
     try:
-        ingestion_service = IngestionService()
-        await ingestion_service.process_document(doc_id, content, tenant_id)
+        # Get the RAG service from the app state (we'll need to pass it)
+        # For now, create a new instance
+        rag_service = LangChainRAGService()
+        
+        # Determine file type from content type
+        # Map common MIME types to file extensions
+        mime_to_extension = {
+            'text/plain': 'txt',
+            'text/markdown': 'md',
+            'application/pdf': 'pdf',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+            'application/msword': 'doc',
+            'octet-stream': None  # Will be determined from content
+        }
+        
+        # Check full MIME type first, then fall back to extension
+        if file_type in mime_to_extension:
+            file_extension = mime_to_extension[file_type]
+        else:
+            file_extension = file_type.split('/')[-1] if '/' in file_type else file_type
+        
+        if file_extension is None or file_extension == 'octet-stream':
+            # Try to determine from content
+            if content.startswith(b'%PDF'):
+                file_extension = 'pdf'
+            elif content.startswith(b'PK'):
+                file_extension = 'docx'
+            else:
+                file_extension = 'txt'
+        
+        # Process document
+        result = await rag_service.process_document(
+            content=content,
+            file_type=file_extension,
+            tenant_id=tenant_id,
+            metadata={"doc_id": doc_id}
+        )
+        
+        # Update document status in database
+        from database import get_db
+        db = next(get_db())
+        doc = db.query(Document).filter(Document.doc_id == doc_id).first()
+        if doc:
+            doc.is_processed = result["status"] == "success"
+            doc.doc_metadata = result
+            db.commit()
+        
+        logger.info(f"Processed document {doc_id}: {result['status']}")
+        
     except Exception as e:
         logger.error(f"Error processing document {doc_id}: {e}")
+        # Update document status to failed
+        try:
+            from database import get_db
+            db = next(get_db())
+            doc = db.query(Document).filter(Document.doc_id == doc_id).first()
+            if doc:
+                doc.is_processed = False
+                doc.doc_metadata = {"error": str(e), "status": "failed"}
+                db.commit()
+        except:
+            pass
 
 @router.get("/documents/{doc_id}", response_model=DocumentResponse)
 async def get_document(doc_id: str, db: Session = Depends(get_db)):

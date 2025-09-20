@@ -9,8 +9,7 @@ from datetime import datetime
 
 from database import get_db, Query
 from models.schemas import QueryRequest, QueryResponse, ErrorResponse
-from services.retrieval import RetrievalService
-from services.llm_orchestrator import LLMOrchestrator
+from services.langchain_rag_service import LangChainRAGService
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -20,23 +19,32 @@ async def process_query(
     request: QueryRequest,
     db: Session = Depends(get_db)
 ):
-    """Process a knowledge query with multi-hop reasoning"""
+    """Process a knowledge query using LangChain RAG"""
     start_time = time.time()
     
     try:
-        # Initialize services
-        retrieval_service = RetrievalService()
-        llm_orchestrator = LLMOrchestrator()
+        # Initialize LangChain RAG service
+        rag_service = LangChainRAGService()
         
         # Process the query
-        result = await llm_orchestrator.process_query(
+        result = await rag_service.process_query(
             question=request.question,
             tenant_id=request.tenant_id,
-            max_hops=request.max_hops,
-            options=request.options
+            options=request.options or {}
         )
         
         processing_time = time.time() - start_time
+        
+        # Extract sources from LangChain result
+        sources = []
+        if "sources" in result and result["sources"]:
+            for doc in result["sources"]:
+                if hasattr(doc, 'metadata'):
+                    sources.append({
+                        "content": doc.page_content[:200] + "..." if len(doc.page_content) > 200 else doc.page_content,
+                        "metadata": doc.metadata,
+                        "score": getattr(doc, 'score', 0.0)
+                    })
         
         # Log the query
         query_record = Query(
@@ -44,11 +52,11 @@ async def process_query(
             user_id=request.user_id,
             question=request.question,
             answer=result["answer"],
-            confidence=result["confidence"],
-            sources=result["sources"],
-            reasoning_traces=result["reasoning_traces"],
+            confidence=result.get("confidence", 0.0),
+            sources=sources,
+            reasoning_traces=result.get("reasoning_traces", []),
             processing_time=processing_time,
-            hop_count=result["hop_count"]
+            hop_count=result.get("hop_count", 1)
         )
         
         db.add(query_record)
@@ -56,10 +64,10 @@ async def process_query(
         
         return QueryResponse(
             answer=result["answer"],
-            sources=result["sources"],
-            confidence=result["confidence"],
-            reasoning_traces=result["reasoning_traces"],
-            hop_count=result["hop_count"],
+            sources=sources,
+            confidence=result.get("confidence", 0.0),
+            reasoning_traces=result.get("reasoning_traces", []),
+            hop_count=result.get("hop_count", 1),
             processing_time=processing_time,
             query_id=str(query_record.query_id)
         )
