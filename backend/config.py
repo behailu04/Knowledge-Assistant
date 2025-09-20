@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     
     # Ollama Settings
     OLLAMA_BASE_URL: str = "http://localhost:11434"
-    OLLAMA_MODEL: str = "llama2"
+    OLLAMA_MODEL: str = "llama2:7b"
     
     MAX_TOKENS: int = 1000
     TEMPERATURE: float = 0.7
@@ -68,6 +68,31 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         case_sensitive = True
+    
+    # LangChain Configuration
+    USE_LANGCHAIN: bool = True
+    LANGCHAIN_LLM_PROVIDER: str = "ollama"
+    LANGCHAIN_EMBEDDING_PROVIDER: str = "huggingface"  # Use local embeddings with Ollama
+    LANGCHAIN_CHUNK_SIZE: int = 1000
+    LANGCHAIN_CHUNK_OVERLAP: int = 200
+    LANGCHAIN_VECTOR_STORE_PATH: str = "./data/langchain_vector_stores"
+    LANGCHAIN_EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"  # Local embedding model
+    LANGCHAIN_LLM_MODEL: str = "llama2:7b"
+    
+    # Ollama Embedding Settings
+    OLLAMA_EMBEDDING_MODEL: str = "mxbai-embed-large"  # Ollama embedding model
+    OLLAMA_EMBEDDING_DIMENSION: int = 1024  # Dimension for mxbai-embed-large
+    
+    # Milvus Vector Database Settings
+    MILVUS_HOST: str = "localhost"
+    MILVUS_PORT: int = 19530
+    MILVUS_COLLECTION_NAME: str = "knowledge_chunks"
+    MILVUS_DIMENSION: int = 384  # Dimension for sentence-transformers/all-MiniLM-L6-v2
+    
+    # LangSmith Tracing (Optional)
+    LANGCHAIN_TRACING_V2: bool = False
+    LANGCHAIN_API_KEY: Optional[str] = None
+    LANGCHAIN_PROJECT: Optional[str] = None
 
 # Global settings instance
 settings = Settings()

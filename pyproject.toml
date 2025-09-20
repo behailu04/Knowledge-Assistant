@@ -1,0 +1,171 @@
+[project]
+name = "knowledge-assistant-backend"
+version = "1.0.0"
+description = "Knowledge Assistant Backend with LangChain RAG"
+authors = [
+    {name = "Knowledge Assistant Team", email = "team@knowledge-assistant.com"}
+]
+# readme = "README.md"  # Commented out since README.md doesn't exist yet
+requires-python = ">=3.11"
+dependencies = [
+    # Core LangChain packages - using version 0.3
+    "langchain==0.3.0",
+    "langchain-community==0.3.0",
+    "langchain-core>=0.3.29,<0.4.0",
+    "langchain-experimental==0.3.0",
+    
+    # Vector stores
+    "faiss-cpu==1.7.4",
+    
+    # LLM integrations
+    "langchain-openai==0.3.0",
+    "langchain-ollama==0.3.0",
+    
+    # Core FastAPI dependencies
+    "fastapi==0.104.1",
+    "uvicorn[standard]==0.24.0",
+    "python-multipart==0.0.6",
+    "pydantic>=2.7.4,<3.0.0",
+    "pydantic-settings>=2.4.0,<3.0.0",
+    
+    # Database
+    "sqlalchemy==2.0.23",
+    "alembic==1.13.1",
+    "psycopg2-binary==2.9.9",
+    
+    # ML and AI dependencies
+    "torch==2.1.1",
+    "transformers==4.40.0",
+    "sentence-transformers==2.7.0",
+    "openai>=1.10.0,<1.68.0",
+    "numpy>=1.24.3,<2.0.0",
+    "scikit-learn==1.3.2",
+    "httpx>=0.27.0,<0.28.0",
+    
+    # Document processing
+    "pypdf==4.0.1",
+    "python-docx==1.1.0",
+    "python-magic==0.4.27",
+    "pytesseract==0.3.10",
+    "Pillow==10.1.0",
+    
+    # Storage and caching
+    "boto3==1.34.0",
+    "redis==5.0.1",
+    
+    # Vector database
+    "pymilvus==2.6.2",
+    "langchain-milvus==0.2.1",
+    
+    # Monitoring and logging
+    "prometheus-client==0.19.0",
+    "structlog==23.2.0",
+    "psutil==5.9.6",
+    
+    # Development and testing
+    "pytest==7.4.3",
+    "pytest-asyncio==0.21.1",
+    "black==23.11.0",
+    "isort==5.12.0",
+    
+    # Evaluation and testing
+    "langsmith>=0.1.17,<0.2.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "backend/langchain_services",
+    "backend/routers", 
+    "backend/services",
+    "backend/models"
+]
+include = [
+    "backend/main.py",
+    "backend/config.py", 
+    "backend/database.py"
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest==7.4.3",
+    "pytest-asyncio==0.21.1",
+    "black==23.11.0",
+    "isort==5.12.0",
+    "mypy==1.7.0",
+    "ruff==0.1.0",
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88
+known_first_party = ["backend.langchain_services", "backend.services", "backend.routers", "backend.models"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+select = [
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # pyflakes
+    "I",  # isort
+    "B",  # flake8-bugbear
+    "C4", # flake8-comprehensions
+    "UP", # pyupgrade
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "C901",  # too complex
+]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "langchain.*",
+    "langchain_community.*",
+    "langchain_core.*",
+    "faiss.*",
+    "transformers.*",
+    "torch.*",
+    "sklearn.*",
+    "redis.*",
+    "boto3.*",
+]
+ignore_missing_imports = true
