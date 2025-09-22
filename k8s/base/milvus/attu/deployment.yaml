@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: attu
+  namespace: knowledge-assistant
+  labels:
+    app: attu
+    component: milvus-gui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: attu
+  template:
+    metadata:
+      labels:
+        app: attu
+        component: milvus-gui
+    spec:
+      containers:
+      - name: attu
+        image: zilliz/attu:v2.3.4
+        ports:
+        - containerPort: 3000
+          name: attu
+        env:
+        - name: MILVUS_URL
+          value: "milvus:19530"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 10
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"

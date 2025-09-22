@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: knowledge-assistant
+  labels:
+    app: minio
+    component: milvus-dependency
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9000
+    targetPort: 9000
+    protocol: TCP
+    name: minio
+  selector:
+    app: minio

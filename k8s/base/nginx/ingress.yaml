@@ -1,0 +1,49 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: knowledge-assistant-ingress
+  namespace: knowledge-assistant
+  labels:
+    app: nginx
+    component: ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+    nginx.ingress.kubernetes.io/client-max-body-size: "100m"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: knowledge-assistant.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: frontend
+            port:
+              number: 3000
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: backend
+            port:
+              number: 8000
+      - path: /vllm
+        pathType: Prefix
+        backend:
+          service:
+            name: vllm-service
+            port:
+              number: 8000
+      - path: /attu
+        pathType: Prefix
+        backend:
+          service:
+            name: attu
+            port:
+              number: 3000

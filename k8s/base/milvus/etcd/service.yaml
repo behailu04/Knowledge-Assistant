@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: etcd
+  namespace: knowledge-assistant
+  labels:
+    app: etcd
+    component: milvus-dependency
+spec:
+  type: ClusterIP
+  ports:
+  - port: 2379
+    targetPort: 2379
+    protocol: TCP
+    name: etcd
+  selector:
+    app: etcd

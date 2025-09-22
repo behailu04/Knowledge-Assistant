@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: milvus
+  namespace: knowledge-assistant
+  labels:
+    app: milvus
+    component: vector-database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: milvus
+  template:
+    metadata:
+      labels:
+        app: milvus
+        component: vector-database
+    spec:
+      containers:
+      - name: milvus
+        image: milvusdb/milvus:v2.3.4
+        ports:
+        - containerPort: 19530
+          name: milvus
+        - containerPort: 9091
+          name: metrics
+        env:
+        - name: ETCD_ENDPOINTS
+          value: "etcd:2379"
+        - name: MINIO_ADDRESS
+          value: "minio:9000"
+        command:
+        - milvus
+        - run
+        - standalone
+        volumeMounts:
+        - name: milvus-data
+          mountPath: /var/lib/milvus
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 9091
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 9091
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 10
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: "500m"
+          limits:
+            memory: "4Gi"
+            cpu: "2"
+      volumes:
+      - name: milvus-data
+        persistentVolumeClaim:
+          claimName: milvus-data
