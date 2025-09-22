@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-config
+  namespace: knowledge-assistant
+data:
+  NEXT_PUBLIC_API_URL: "http://backend:8000/api/v1"
+  NODE_ENV: "production"
