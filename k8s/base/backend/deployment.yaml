@@ -1,0 +1,136 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: knowledge-assistant
+  labels:
+    app: backend
+    component: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+        component: api
+    spec:
+      containers:
+      - name: backend
+        image: docker.io/knowledge-assistant-backend:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: REDIS_URL
+        - name: LLM_PROVIDER
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: LLM_PROVIDER
+        - name: VLLM_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: VLLM_BASE_URL
+        - name: VLLM_MODEL
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: VLLM_MODEL
+        - name: LANGCHAIN_LLM_PROVIDER
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: LANGCHAIN_LLM_PROVIDER
+        - name: LANGCHAIN_LLM_MODEL
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: LANGCHAIN_LLM_MODEL
+        - name: LANGCHAIN_EMBEDDING_PROVIDER
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: LANGCHAIN_EMBEDDING_PROVIDER
+        - name: LANGCHAIN_EMBEDDING_MODEL
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: LANGCHAIN_EMBEDDING_MODEL
+        - name: MILVUS_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: MILVUS_HOST
+        - name: MILVUS_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: MILVUS_PORT
+        - name: MILVUS_COLLECTION_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: MILVUS_COLLECTION_NAME
+        - name: LOG_LEVEL
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: LOG_LEVEL
+        - name: API_V1_STR
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: API_V1_STR
+        - name: PROJECT_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: backend-config
+              key: PROJECT_NAME
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: SECRET_KEY
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: backend-secret
+              key: OPENAI_API_KEY
+              optional: true
+        livenessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8000
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/v1/health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1"
