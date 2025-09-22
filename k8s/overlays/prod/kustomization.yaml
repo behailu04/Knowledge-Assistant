@@ -1,0 +1,30 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: knowledge-assistant-prod
+
+resources:
+  - ../../base
+
+patches:
+  - path: backend-deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: backend
+  - path: frontend-deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: frontend
+  - path: vllm-deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: vllm-server
+  - path: ingress-patch.yaml
+    target:
+      kind: Ingress
+      name: knowledge-assistant-ingress
+
+# ConfigMap patches will be handled via patches instead
+
+commonLabels:
+  environment: prod

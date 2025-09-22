@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-server
+  namespace: knowledge-assistant-prod
+spec:
+  replicas: 2
+  template:
+    spec:
+      containers:
+      - name: vllm-server
+        # Use GPU version for production
+        image: vllm/vllm-openai:v0.2.7
+        imagePullPolicy: IfNotPresent
+        args:
+        - "--model"
+        - "microsoft/Phi-3-mini-4k-instruct"
+        - "--host"
+        - "0.0.0.0"
+        - "--port"
+        - "8000"
+        - "--tensor-parallel-size"
+        - "1"
+        - "--gpu-memory-utilization"
+        - "0.8"
+        - "--max-model-len"
+        - "4096"
+        - "--dtype"
+        - "auto"
+        - "--trust-remote-code"
+        - "--served-model-name"
+        - "phi-3-mini"
+        resources:
+          requests:
+            memory: "8Gi"
+            cpu: "2"
+            nvidia.com/gpu: 1
+          limits:
+            memory: "16Gi"
+            cpu: "4"
+            nvidia.com/gpu: 1
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      tolerations:
+      - key: nvidia.com/gpu
+        operator: Exists
+        effect: NoSchedule
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: accelerator
+                operator: In
+                values:
+                - nvidia-tesla-t4
+                - nvidia-tesla-v100
+                - nvidia-tesla-a100
+                - nvidia-rtx-4090
