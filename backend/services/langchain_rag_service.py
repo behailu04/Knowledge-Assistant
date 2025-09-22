@@ -5,6 +5,7 @@ import os
 from typing import Dict, Any, List, Optional
 from langchain_community.chat_models import ChatOpenAI, ChatOllama
 from langchain_community.llms import OpenAI, Ollama
+from langchain_services.llm_providers import VLLMClient
 from langchain_core.documents import Document
 import logging
 
@@ -49,11 +50,24 @@ class LangChainRAGService:
     
     def _get_default_config(self) -> Dict[str, Any]:
         """Get default configuration"""
-        logger.info(f"Settings OLLAMA_MODEL: {settings.OLLAMA_MODEL}, LLM_PROVIDER: {settings.LLM_PROVIDER}")
+        logger.info(f"Settings LLM_PROVIDER: {settings.LLM_PROVIDER}")
+        
+        # Determine model and base URL based on provider
+        if settings.LLM_PROVIDER == "ollama":
+            llm_model = settings.OLLAMA_MODEL
+            base_url = settings.OLLAMA_BASE_URL
+        elif settings.LLM_PROVIDER == "vllm":
+            llm_model = settings.VLLM_MODEL
+            base_url = settings.VLLM_BASE_URL
+        else:
+            llm_model = "gpt-3.5-turbo"
+            base_url = None
+            
         return {
             "llm_provider": settings.LLM_PROVIDER,
-            "llm_model": settings.OLLAMA_MODEL if settings.LLM_PROVIDER == "ollama" else "gpt-3.5-turbo",
+            "llm_model": llm_model,
             "ollama_base_url": settings.OLLAMA_BASE_URL,
+            "vllm_base_url": settings.VLLM_BASE_URL,
             "embedding_provider": "huggingface",
             "embedding_model": settings.LANGCHAIN_EMBEDDING_MODEL,
             "chunk_size": 1000,
@@ -82,6 +96,15 @@ class LangChainRAGService:
                     model=model,
                     base_url=base_url,
                     temperature=0.7
+                )
+            elif provider == "vllm":
+                base_url = self.config.get("vllm_base_url", "http://localhost:8000")
+                self.llm = VLLMClient(
+                    base_url=base_url,
+                    model=model,
+                    temperature=0.7,
+                    max_tokens=1000,
+                    api_key=settings.VLLM_API_KEY
                 )
             else:
                 raise ValueError(f"Unsupported LLM provider: {provider}")

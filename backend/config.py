@@ -25,13 +25,18 @@ class Settings(BaseSettings):
     EMBEDDING_DEVICE: str = "cpu"  # cpu, cuda
     
     # LLM Settings
-    LLM_PROVIDER: str = "ollama"  # openai, ollama, local
+    LLM_PROVIDER: str = "vllm"  # openai, ollama, vllm, local
     OPENAI_API_KEY: Optional[str] = None
     OPENAI_MODEL: str = "gpt-3.5-turbo"
     
     # Ollama Settings
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "llama2:7b"
+    
+    # vLLM Settings
+    VLLM_BASE_URL: str = "http://vllm-service.knowledge-assistant.svc.cluster.local:8000"
+    VLLM_MODEL: str = "phi-3-mini"
+    VLLM_API_KEY: Optional[str] = None  # For future authentication
     
     MAX_TOKENS: int = 1000
     TEMPERATURE: float = 0.7
@@ -71,13 +76,13 @@ class Settings(BaseSettings):
     
     # LangChain Configuration
     USE_LANGCHAIN: bool = True
-    LANGCHAIN_LLM_PROVIDER: str = "ollama"
-    LANGCHAIN_EMBEDDING_PROVIDER: str = "huggingface"  # Use local embeddings with Ollama
+    LANGCHAIN_LLM_PROVIDER: str = "vllm"
+    LANGCHAIN_EMBEDDING_PROVIDER: str = "huggingface"  # Use local embeddings with vLLM
     LANGCHAIN_CHUNK_SIZE: int = 1000
     LANGCHAIN_CHUNK_OVERLAP: int = 200
     LANGCHAIN_VECTOR_STORE_PATH: str = "./data/langchain_vector_stores"
     LANGCHAIN_EMBEDDING_MODEL: str = "sentence-transformers/all-MiniLM-L6-v2"  # Local embedding model
-    LANGCHAIN_LLM_MODEL: str = "llama2:7b"
+    LANGCHAIN_LLM_MODEL: str = "phi-3-mini"
     
     # Ollama Embedding Settings
     OLLAMA_EMBEDDING_MODEL: str = "mxbai-embed-large"  # Ollama embedding model

@@ -45,11 +45,15 @@ async def health_check(db: Session = Depends(get_db)):
     
     # Check LLM service
     try:
-        # Check Ollama service if using Ollama
-        from config import settings
+        import httpx
         if settings.LLM_PROVIDER == "ollama":
-            import httpx
             response = httpx.get(f"{settings.OLLAMA_BASE_URL}/api/tags", timeout=5.0)
+            if response.status_code == 200:
+                services["llm_service"] = "healthy"
+            else:
+                services["llm_service"] = "unhealthy"
+        elif settings.LLM_PROVIDER == "vllm":
+            response = httpx.get(f"{settings.VLLM_BASE_URL}/health", timeout=5.0)
             if response.status_code == 200:
                 services["llm_service"] = "healthy"
             else:
