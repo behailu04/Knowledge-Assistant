@@ -1,0 +1,41 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: knowledge-assistant-dev
+
+resources:
+  - ../../base/namespace.yaml
+  - ../../base/postgres/
+  - ../../base/redis/
+  - ../../base/milvus/
+  - ../../base/backend/
+  - ../../base/frontend/
+  - ../../base/nginx/
+  - ../../base/ollama/
+
+patches:
+  - path: backend-deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: backend
+  - path: frontend-deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: frontend
+  - path: vllm-cpu-deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: vllm-server
+  - target:
+      kind: Deployment
+      name: vllm-server
+    patch: |-
+      - op: remove
+        path: /spec/template/spec/containers/0/resources/requests/nvidia.com~1gpu
+      - op: remove
+        path: /spec/template/spec/containers/0/resources/limits/nvidia.com~1gpu
+
+# ConfigMap patches will be handled via patches instead
+
+commonLabels:
+  environment: dev
