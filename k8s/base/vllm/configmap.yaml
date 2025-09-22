@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vllm-config
+  namespace: knowledge-assistant
+  labels:
+    app: vllm-server
+    component: config
+data:
+  model-config.yaml: |
+    model:
+      name: "microsoft/Phi-3-mini-4k-instruct"
+      served_name: "phi-3-mini"
+      max_model_length: 4096
+      dtype: "auto"
+      trust_remote_code: true
+    
+    serving:
+      host: "0.0.0.0"
+      port: 8000
+      tensor_parallel_size: 1
+      gpu_memory_utilization: 0.8
+    
+    performance:
+      max_batch_size: 256
+      max_num_seqs: 256
+      max_num_batched_tokens: 8192
+      max_paddings: 256
+    
+    logging:
+      level: "INFO"
+      format: "json"
+  
+  phi-model-config.yaml: |
+    # Phi-3-mini-4k-instruct specific configuration
+    model:
+      architecture: "Phi3ForCausalLM"
+      attention_implementation: "flash_attention_2"
+      auto_map:
+        AutoModelForCausalLM: "modeling_phi3.Phi3ForCausalLM"
+      bos_token_id: 1
+      eos_token_id: 32000
+      hidden_act: "silu"
+      hidden_size: 3072
+      initializer_range: 0.02
+      intermediate_size: 8192
+      max_position_embeddings: 4096
+      model_type: "phi3"
+      num_attention_heads: 32
+      num_hidden_layers: 32
+      num_key_value_heads: 32
+      pretraining_tp: 1
+      rope_theta: 10000.0
+      rms_norm_eps: 1e-05
+      rope_scaling: null
+      tie_word_embeddings: false
+      vocab_size: 32064
+      use_cache: true
